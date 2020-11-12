@@ -138,13 +138,12 @@ void NetSource::SetDebugIP(const std::string& _host, const std::string& _ip) {
 	ScopedLock lock(sg_ip_mutex);
 
 	xinfo2(TSF "task set debugip:%_ for host:%_", _ip, _host);
-
-	if (_ip.empty() && sg_host_debugip_mapping.find(_host) != sg_host_debugip_mapping.end()) {
-		sg_host_debugip_mapping.erase(_host);
-	}
-	else {
-		sg_host_debugip_mapping[_host] = _ip;
-	}
+    
+    if (_ip.empty()){
+        sg_host_debugip_mapping.erase(_host);
+    }else{
+        sg_host_debugip_mapping[_host] = _ip;
+    }
 }
 
 const std::string& NetSource::GetLongLinkDebugIP() {
@@ -177,7 +176,7 @@ void NetSource::GetLonglinkPorts(std::vector<uint16_t>& _ports) {
 	_ports = sg_longlink_ports;
 }
 
-bool NetSource::GetLongLinkItems(std::vector<IPPortItem>& _ipport_items, DnsUtil& _dns_util) {
+bool NetSource::GetLongLinkItems(std::vector<IPPortItem>& _ipport_items, DnsUtil& _dns_util, const std::vector<std::string>& _host_list) {
     xinfo_function();
     ScopedLock lock(sg_ip_mutex);
 
@@ -187,7 +186,9 @@ bool NetSource::GetLongLinkItems(std::vector<IPPortItem>& _ipport_items, DnsUtil
     
     lock.unlock();
 
- 	std::vector<std::string> longlink_hosts = NetSource::GetLongLinkHosts();
+    std::vector<std::string> longlink_hosts = _host_list;
+    if(longlink_hosts.empty())
+        longlink_hosts = NetSource::GetLongLinkHosts();
  	if (longlink_hosts.empty()) {
  		xerror2("longlink host empty.");
  		return false;
@@ -459,7 +460,12 @@ size_t NetSource::__MakeIPPorts(std::vector<IPPortItem>& _ip_items, const std::s
 	}
 
 	if (!_isbackup) {
-		ipportstrategy_.SortandFilter(temp_items, (int)(_count - len));
+        bool need_use_IPv6 = false;
+        if (fun_need_use_IPv6_) {
+            need_use_IPv6 = fun_need_use_IPv6_();
+        }
+
+		ipportstrategy_.SortandFilter(temp_items, (int)(_count - len), need_use_IPv6);
 		_ip_items.insert(_ip_items.end(), temp_items.begin(), temp_items.end());
 	}
 	else {

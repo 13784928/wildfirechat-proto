@@ -44,18 +44,18 @@
 DEFINE_FIND_CLASS(KPlatformCommC2Java, "com/tencent/mars/comm/PlatformComm$C2Java")
 
 #ifdef ANDROID
-DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_startAlarm, KPlatformCommC2Java, "startAlarm", "(II)Z")
-bool startAlarm(int64_t id, int after) {
+DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_startAlarm, KPlatformCommC2Java, "startAlarm", "(III)Z")
+bool startAlarm(int type, int64_t id, int after) {
     xverbose_function();
     
     if (coroutine::isCoroutine())
-        return coroutine::MessageInvoke(boost::bind(&startAlarm, id, after));
+        return coroutine::MessageInvoke(boost::bind(&startAlarm, type, id, after));
     
     VarCache* cacheInstance = VarCache::Singleton();
     ScopeJEnv scopeJEnv(cacheInstance->GetJvm());
     JNIEnv* env = scopeJEnv.GetEnv();
-    jboolean ret = JNU_CallStaticMethodByMethodInfo(env, KPlatformCommC2Java_startAlarm, (jint)id, (jint)after).z;
-    xdebug2(TSF"id= %0, after= %1, ret= %2", id, after, (bool)ret);
+    jboolean ret = JNU_CallStaticMethodByMethodInfo(env, KPlatformCommC2Java_startAlarm, (jint)type, (jint)id, (jint)after).z;
+    xdebug2(TSF"id= %0, after= %1, type= %2, ret= %3", id, after, type, (bool)ret);
     return (bool)ret;
 }
 
@@ -130,11 +130,11 @@ DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_getNetInfo, KPlatformCommC2Java, "
 int getNetInfo() {
 	xverbose_function();
 
-    if (g_NetInfo != 0)
-        return g_NetInfo;
+    // if (g_NetInfo != 0 && g_NetInfo != kNoNet)
+    //     return g_NetInfo;
     
-    if (coroutine::isCoroutine())
-        return coroutine::MessageInvoke(&getNetInfo);
+    // if (coroutine::isCoroutine())
+    //     return coroutine::MessageInvoke(&getNetInfo);
 
     VarCache* cacheInstance = VarCache::Singleton();
     ScopeJEnv scopeJEnv(cacheInstance->GetJvm());
@@ -145,6 +145,17 @@ int getNetInfo() {
 
     xverbose2(TSF"netInfo= %0", netType);
     return (int)netType;
+}
+
+DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_getStatisticsNetType, KPlatformCommC2Java, "getStatisticsNetType", "()I")
+int getNetTypeForStatistics(){
+    xverbose_function();
+
+    VarCache* cacheInstance = VarCache::Singleton();
+    ScopeJEnv scopeJEnv(cacheInstance->GetJvm());
+    JNIEnv* env = scopeJEnv.GetEnv();
+
+    return (int)JNU_CallStaticMethodByMethodInfo(env, KPlatformCommC2Java_getStatisticsNetType).i;
 }
 
 DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_getCurRadioAccessNetworkInfo, KPlatformCommC2Java, "getCurRadioAccessNetworkInfo", "()I")
@@ -237,16 +248,16 @@ bool getCurRadioAccessNetworkInfo(RadioAccessNetworkInfo& _raninfo) {
 
 DEFINE_FIND_STATIC_METHOD(KPlatformCommC2Java_getCurWifiInfo, KPlatformCommC2Java,
                           "getCurWifiInfo", "()Lcom/tencent/mars/comm/PlatformComm$WifiInfo;")
-bool getCurWifiInfo(WifiInfo& wifiInfo) {
+bool getCurWifiInfo(WifiInfo& wifiInfo, bool _force_refresh) {
     xverbose_function();
 
-    if (!g_wifi_info.ssid.empty()) {
+    if (!_force_refresh && !g_wifi_info.ssid.empty()) {
     	wifiInfo = g_wifi_info;
     	return true;
     }
 
     if (coroutine::isCoroutine())
-        return coroutine::MessageInvoke(boost::bind(&getCurWifiInfo, boost::ref(wifiInfo)));
+        return coroutine::MessageInvoke(boost::bind(&getCurWifiInfo, boost::ref(wifiInfo), _force_refresh));
                                         
     VarCache* cacheInstance = VarCache::Singleton();
     ScopeJEnv scopeJEnv(cacheInstance->GetJvm());

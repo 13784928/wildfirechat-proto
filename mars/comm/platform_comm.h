@@ -40,13 +40,26 @@ enum NetType {
 };
 int getNetInfo();
 
+enum class NetTypeForStatistics{
+    NETTYPE_NON = -1,
+    NETTYPE_NOT_WIFI = 0,
+    NETTYPE_WIFI = 1,
+    NETTYPE_WAP = 2,
+    NETTYPE_2G = 3,
+    NETTYPE_3G = 4,
+    NETTYPE_4G = 5,
+    NETTYPE_UNKNOWN = 6,    //ignore, DO NOT reuse
+    NETTYPE_5G = 7,
+};
+int getNetTypeForStatistics();
+
 bool getCurRadioAccessNetworkInfo(struct RadioAccessNetworkInfo& _info);
 
 struct WifiInfo {
     std::string ssid;
     std::string bssid;
 };
-bool getCurWifiInfo(WifiInfo& _wifi_info);
+bool getCurWifiInfo(WifiInfo& _wifi_info, bool _force_refresh = false);
 
 struct SIMInfo {
     std::string isp_code;
@@ -201,7 +214,7 @@ inline int getCurrNetLabel(std::string& netInfo) {
         WifiInfo wifiInfo;
 
         if (getCurWifiInfo(wifiInfo)) {
-            netInfo = wifiInfo.ssid;
+            netInfo = wifiInfo.ssid.empty() ? "empty_ssid" : wifiInfo.ssid;
         } else {
             netInfo = "no_ssid_wifi";
         }
@@ -213,7 +226,7 @@ inline int getCurrNetLabel(std::string& netInfo) {
         SIMInfo simInfo;
 
         if (getCurSIMInfo(simInfo)) {
-            netInfo = simInfo.isp_code;
+            netInfo = simInfo.isp_code.empty() ? "empty_ispCode" : simInfo.isp_code;
         } else {
             netInfo = "no_ispCode_mobile";
         }
@@ -240,7 +253,7 @@ float publiccomponent_GetSystemVersion();
 #endif
 
 #ifdef ANDROID
-bool startAlarm(int64_t id, int after);
+bool startAlarm(int type, int64_t id, int after);
 bool stopAlarm(int64_t id);
 
 void* wakeupLock_new();

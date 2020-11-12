@@ -44,11 +44,15 @@ MarsWrapper::MarsWrapper()
 #if _DEBUG
 	xlogger_SetLevel(kLevelDebug);
 	appender_set_console_log(true);
+	extern std::function<void(char* _log)> g_console_log_fun;
+	g_console_log_fun = [](char* _log) {
+		::OutputDebugStringA(_log);
+	};
 #else
 	xlogger_SetLevel(kLevelInfo);
 	appender_set_console_log(false);
 #endif
-	appender_open(kAppednerAsync, logPath.c_str(), "Sample", pubKey.c_str());
+	appender_open(kAppenderAsync, logPath.c_str(), "Sample", pubKey.c_str());
 }
 
 void MarsWrapper::OnPush(uint64_t _channel_id, uint32_t _cmdid, uint32_t _taskid, const AutoBuffer& _body, const AutoBuffer& _extend)

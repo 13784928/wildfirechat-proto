@@ -105,8 +105,7 @@ void NetSourceTimerCheck::__StartCheck() {
 void NetSourceTimerCheck::__Check() {
 
     IPSourceType pre_iptype = longlink_.Profile().ip_type;
-    if (kIPSourceDebug == pre_iptype || kIPSourceNULL == pre_iptype
-    		|| kIPSourceNewDns == pre_iptype || kIPSourceDNS == pre_iptype) {
+    if (kIPSourceBackup != pre_iptype) {
     	return;
     }
 
@@ -215,6 +214,7 @@ bool NetSourceTimerCheck::__TryConnnect(const std::string& _host) {
 
         if (select_ret < 0) {
             xerror2(TSF"select errror, ret:%0, strerror(errno):%1", select_ret, strerror(errno));
+            break;
         }
 
         if (seletor_.IsException()) {
